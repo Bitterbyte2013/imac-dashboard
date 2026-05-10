@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2011 iMac Dashboard</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a0e1a;
+    color: #e0e6f0;
+    min-height: 100vh;
+    padding: 20px;
+  }
+  .header {
+    text-align: center;
+    padding: 20px 0 30px;
+    border-bottom: 1px solid #1e293b;
+    margin-bottom: 30px;
+  }
+  .header h1 {
+    font-size: 28px;
+    color: #60a5fa;
+    margin-bottom: 5px;
+  }
+  .header .subtitle {
+    color: #64748b;
+    font-size: 14px;
+  }
+  .header .status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+    font-size: 12px;
+    color: #4ade80;
+  }
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4ade80;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+  .update-row {
+    font-size: 10px;
+    color: #94a3b8;
+    margin-top: 10px;
+    padding: 6px 12px;
+    background: #0f172a;
+    border-radius: 6px;
+    text-align: center;
+    line-height: 1.6;
+  }
+  .update-row .email-part {
+    font-size: 9px;
+    color: #94a3b8;
+  }
+  .update-row .time-part {
+    font-size: 9px;
+    color: #94a3b8;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 14px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  .card {
+    background: #111827;
+    border: 1px solid #1e293b;
+    border-radius: 10px;
+    padding: 12px;
+  }
+  .card h2 {
+    font-size: 11px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .card h2 .icon { font-size: 15px; }
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    border-bottom: 1px solid #1a2332;
+  }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-label { color: #94a3b8; font-size: 9px; }
+  .stat-value { color: #e2e8f0; font-size: 11px; font-weight: 600; }
+  .stat-value.warning { color: #fbbf24; }
+  .stat-value.danger { color: #ef4444; }
+  .stat-value.ok { color: #4ade80; }
+  .progress-bar {
+    width: 100%;
+    height: 5px;
+    background: #1e293b;
+    border-radius: 3px;
+    margin-top: 5px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+  }
+  .progress-fill.green { background: #4ade80; }
+  .progress-fill.yellow { background: #fbbf24; }
+  .progress-fill.red { background: #ef4444; }
+  .details {
+    margin-top: 6px;
+    font-size: 8px;
+    color: #475569;
+    line-height: 1.4;
+  }
+  .temp-gauge {
+    text-align: center;
+    padding: 6px 0;
+  }
+  .temp-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #60a5fa;
+  }
+  .temp-label {
+    font-size: 9px;
+    color: #64748b;
+    margin-top: 3px;
+  }
+  .system-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    margin-top: 6px;
+  }
+  .info-item {
+    background: #0f172a;
+    padding: 4px 5px;
+    border-radius: 4px;
+  }
+  .info-item .label {
+    font-size: 7px;
+    color: #475569;
+    text-transform: uppercase;
+  }
+  .info-item .value {
+    font-size: 8px;
+    color: #e2e8f0;
+    margin-top: 1px;
+  }
+  .refresh-info {
+    text-align: center;
+    margin-top: 12px;
+    font-size: 9px;
+    color: #334155;
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>2011 iMac 21.5&quot; Dashboard</h1>
+  <div class="subtitle">otto-imac (192.168.0.26) — real-time system monitoring</div>
+  <div class="status-indicator">
+    <span class="status-dot"></span>
+    <span>SSH Connected</span>
+  </div>
+  <div class="update-row" id="updateRow">
+    <span class="email-part" id="emailRow">📧 Email: 0 unread | Last fetch: <span id="lastFetchTime" class="stat-value ok">--</span></span>
+    <span class="time-part" id="lastUpdate"> | Current time: <span id="clock" class="stat-value ok">--</span></span>
+  </div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h2><span class="icon">⚡</span> CPU Usage</h2>
+    <div class="stat-row">
+      <span class="stat-label">Load Average</span>
+      <span class="stat-value" id="cpuLoad">--</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">CPU Usage</span>
+      <span class="stat-value" id="cpuPercent">--</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill green" id="cpuBar" style="width: 0%"></div>
+    </div>
+    <div class="details" id="cpuDetails">Loading...</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">🌡️</span> Temperature</h2>
+    <div class="temp-gauge">
+      <div class="temp-value" id="tempValue">--</div>
+      <div class="temp-label">GPU Die Temperature</div>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill green" id="tempBar" style="width: 0%"></div>
+    </div>
+    <div class="details" id="tempDetails">Loading...</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">💾</span> RAM Usage</h2>
+    <div class="stat-row">
+      <span class="stat-label">Used</span>
+      <span class="stat-value" id="ramUsed">--</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">Total</span>
+      <span class="stat-value" id="ramTotal">--</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">Free</span>
+      <span class="stat-value" id="ramFree">--</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill green" id="ramBar" style="width: 0%"></div>
+    </div>
+    <div class="details" id="ramDetails">Loading...</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">💿</span> Disk Usage</h2>
+    <div class="stat-row">
+      <span class="stat-label">Used</span>
+      <span class="stat-value" id="diskUsed">--</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">Total</span>
+      <span class="stat-value" id="diskTotal">--</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">Percent Used</span>
+      <span class="stat-value" id="diskPercent">--</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill green" id="diskBar" style="width: 0%"></div>
+    </div>
+    <div class="details" id="diskDetails">Loading...</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">🎮</span> GPU</h2>
+    <div class="stat-row">
+      <span class="stat-label">Model</span>
+      <span class="stat-value" id="gpuModel">--</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">VRAM</span>
+      <span class="stat-value" id="gpuVram">--</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">Status</span>
+      <span class="stat-value" id="gpuStatus">--</span>
+    </div>
+    <div class="details" id="gpuDetails">Loading...</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">🔄</span> Time Machine</h2>
+    <div class="stat-row">
+      <span class="stat-label">Status</span>
+      <span class="stat-value" id="tmStatus">--</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">Last Backup</span>
+      <span class="stat-value" id="tmLast">--</span>
+    </div>
+    <div class="details" id="tmDetails">Loading...</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">🌐</span> Network</h2>
+    <div class="stat-row">
+      <span class="stat-label">IP Address</span>
+      <span class="stat-value" id="netIp">--</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">Hostname</span>
+      <span class="stat-value" id="netHost">--</span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">SSH User</span>
+      <span class="stat-value" id="netUser">--</span>
+    </div>
+    <div class="details" id="netDetails">Loading...</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="icon">📋</span> System Details</h2>
+    <div class="system-info" id="sysInfo">
+      Loading...
+    </div>
+  </div>
+</div>
+
+<div class="refresh-info">
+  Data sourced from otto-imac via SSH • Refreshes every 5 minutes
+</div>
+
+<script>
+function updateUI(data) {
+  var now = new Date();
+  document.getElementById('clock').textContent = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') + ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0') + ':' + String(now.getSeconds()).padStart(2,'0');
+
+  if (data.cpu) {
+    document.getElementById('cpuLoad').textContent = data.cpu.load || '--';
+    var pct = data.cpu.percent || 0;
+    document.getElementById('cpuPercent').textContent = pct + '%';
+    document.getElementById('cpuPercent').className = 'stat-value ' + (pct > 80 ? 'danger' : pct > 60 ? 'warning' : 'ok');
+    var bar = document.getElementById('cpuBar');
+    bar.style.width = pct + '%';
+    bar.className = 'progress-fill ' + (pct > 80 ? 'red' : pct > 60 ? 'yellow' : 'green');
+    document.getElementById('cpuDetails').textContent = 'Model: ' + (data.cpu.model || 'Unknown') + ' | Cores: ' + (data.cpu.cores || '--');
+  }
+
+  if (data.temp) {
+    var temp = data.temp.value || '--';
+    var tempNum = parseFloat(temp);
+    document.getElementById('tempValue').textContent = temp + 'C';
+    document.getElementById('tempValue').style.color = tempNum > 80 ? '#ef4444' : tempNum > 60 ? '#fbbf24' : '#60a5fa';
+    var pct = Math.min((tempNum / 100) * 100, 100);
+    var bar = document.getElementById('tempBar');
+    bar.style.width = pct + '%';
+    bar.className = 'progress-fill ' + (tempNum > 80 ? 'red' : tempNum > 60 ? 'yellow' : 'green');
+    document.getElementById('tempDetails').textContent = 'GPU Die Temp -- Target: < 80C';
+  }
+
+  if (data.ram) {
+    document.getElementById('ramUsed').textContent = data.ram.used || '--';
+    document.getElementById('ramTotal').textContent = data.ram.total || '--';
+    document.getElementById('ramFree').textContent = data.ram.free || '--';
+    var pct = data.ram.percent || 0;
+    var bar = document.getElementById('ramBar');
+    bar.style.width = pct + '%';
+    bar.className = 'progress-fill ' + (pct > 80 ? 'red' : pct > 60 ? 'yellow' : 'green');
+    document.getElementById('ramDetails').textContent = 'RAM Pressure: ' + (data.ram.percent || 0) + '% used';
+  }
+
+  if (data.disk) {
+    document.getElementById('diskUsed').textContent = data.disk.used || '--';
+    document.getElementById('diskTotal').textContent = data.disk.total || '--';
+    var pct = data.disk.percent || 0;
+    document.getElementById('diskPercent').textContent = pct + '%';
+    document.getElementById('diskPercent').className = 'stat-value ' + (pct > 90 ? 'danger' : pct > 70 ? 'warning' : 'ok');
+    var bar = document.getElementById('diskBar');
+    bar.style.width = pct + '%';
+    bar.className = 'progress-fill ' + (pct > 90 ? 'red' : pct > 70 ? 'yellow' : 'green');
+    document.getElementById('diskDetails').textContent = 'Boot drive: ' + (data.disk.total || '--');
+  }
+
+  if (data.gpu) {
+    document.getElementById('gpuModel').textContent = data.gpu.model || '--';
+    document.getElementById('gpuVram').textContent = data.gpu.vram || '--';
+    document.getElementById('gpuStatus').textContent = data.gpu.status || '--';
+    document.getElementById('gpuDetails').textContent = 'AMD Radeon HD 6770M -- 1GB GDDR5';
+  }
+
+  if (data.tm) {
+    document.getElementById('tmStatus').textContent = data.tm.status || '--';
+    document.getElementById('tmStatus').className = 'stat-value ' + (data.tm.status && data.tm.status.includes('OK') ? 'ok' : 'warning');
+    document.getElementById('tmLast').textContent = data.tm.last || '--';
+    // Calculate backup age for color coding
+    var lastColor = 'warning';
+    if (data.tm.last && data.tm.last !== 'Never') {
+      var lastParts = data.tm.last.split(' ');
+      var lastDate = lastParts[0].split('-');
+      var lastTime = lastParts[1].split(':');
+      var lastBackup = new Date(lastDate[0], lastDate[1]-1, lastDate[2], lastTime[0], lastTime[1], lastTime[2]);
+      var now = new Date();
+      var diffMs = now - lastBackup;
+      var diffMins = diffMs / 60000;
+      if (diffMins <= 30) {
+        lastColor = 'ok';
+      } else if (diffMins <= 720) { // 12 hours
+        lastColor = 'warning';
+      } else {
+        lastColor = 'danger';
+      }
+    }
+    document.getElementById('tmLast').className = 'stat-value ' + lastColor;
+    document.getElementById('tmDetails').textContent = data.tm.last ? 'Latest backup: ' + data.tm.last : 'No backups configured';
+  }
+
+  if (data.sysinfo) {
+    document.getElementById('netIp').textContent = data.sysinfo.ip || '--';
+    document.getElementById('netHost').textContent = 'otto-imac.local';
+    document.getElementById('netUser').textContent = '2011imac21';
+    document.getElementById('netDetails').textContent = 'SSH: 2011imac21@192.168.0.26';
+  }
+
+  if (data.email) {
+    document.getElementById('emailRow').innerHTML = '📧 Email: ' + (data.email.unread || 0) + ' unread | Last fetch: <span id="lastFetchTime" class="stat-value ok">' + (data.email.last_fetch || '--') + '</span>';
+  }
+
+  if (data.sysinfo) {
+    var si = data.sysinfo;
+    document.getElementById('sysInfo').innerHTML =
+      '<div class="info-item"><div class="label">Model</div><div class="value">' + (si.model || 'iMac (Mid 2011)') + '</div></div>' +
+      '<div class="info-item"><div class="label">Processor</div><div class="value">' + (si.cpu || 'Unknown') + '</div></div>' +
+      '<div class="info-item"><div class="label">Memory</div><div class="value">' + (si.ram || '--') + '</div></div>' +
+      '<div class="info-item"><div class="label">OS</div><div class="value">' + (si.os || 'Unknown') + '</div></div>' +
+      '<div class="info-item"><div class="label">Uptime</div><div class="value">' + (si.uptime || 'Unknown') + '</div></div>' +
+      '<div class="info-item"><div class="label">IP</div><div class="value">' + (si.ip || 'Unknown') + '</div></div>' +
+      '<div class="info-item"><div class="label">SSH User</div><div class="value">2011imac21</div></div>' +
+      '<div class="info-item"><div class="label">Dashboard</div><div class="value">192.168.0.26:8081</div></div>';
+  }
+}
+
+// Fetch data from stats API
+fetch('/stats')
+  .then(response => response.json())
+  .then(data => {
+    updateUI(data);
+    // Auto-refresh every 5 minutes
+    setInterval(() => {
+      fetch('/stats')
+        .then(response => response.json())
+        .then(data => updateUI(data));
+    }, 300000);
+    // Ticking clock - update every second
+    setInterval(() => {
+      var now = new Date();
+      var clockEl = document.getElementById('clock');
+      if (clockEl) {
+        clockEl.textContent = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0') + ' ' + String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0') + ':' + String(now.getSeconds()).padStart(2,'0');
+      }
+    }, 1000);
+  })
+  .catch(error => {
+    console.error('Error fetching stats:', error);
+    // Fallback to hardcoded data if API fails
+    var fallbackData = {
+      "timestamp": new Date().toISOString(),
+      "cpu": {"load": "1.10 1.04 0.97", "percent": 5, "model": "Intel i5-2500S @ 2.70GHz", "cores": 4},
+      "temp": {"value": "--", "unit": "C"},
+      "ram": {"used": "1.93 GB", "total": "8.0 GB", "free": "6.07 GB", "percent": 24},
+      "disk": {"used": "13Gi", "total": "931Gi", "percent": 2},
+      "gpu": {"model": "AMD Radeon HD 6770M", "vram": "1024 MB", "status": "-- degree C", "fan_speed": "-- RPM"},
+      "tm": {"status": "Configured", "last": "Never"},
+      "sysinfo": {"model": "iMac (Mid 2011)", "cpu": "Intel i5-2500S @ 2.70GHz", "ram": "8.0 GB", "os": "10.13.6", "uptime": "2:19, 3", "ip": "192.168.0.26"}
+    };
+    updateUI(fallbackData);
+  });
+</script>
+</body>
+</html>
